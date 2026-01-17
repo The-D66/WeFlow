@@ -7,6 +7,7 @@ import { getEmojiPath } from 'wechat-emojis'
 import { ImagePreview } from '../components/ImagePreview'
 import { VoiceTranscribeDialog } from '../components/VoiceTranscribeDialog'
 import { AnimatedStreamingText } from '../components/AnimatedStreamingText'
+import * as configService from '../services/config'
 import './ChatPage.scss'
 
 // 系统消息类型常量
@@ -1361,6 +1362,16 @@ function MessageBubble({ message, session, showTime, myAvatarUrl, isGroupChat }:
   const [voiceTranscriptError, setVoiceTranscriptError] = useState(false)
   const voiceTranscriptRequestedRef = useRef(false)
   const [showImagePreview, setShowImagePreview] = useState(false)
+  const [autoTranscribeVoice, setAutoTranscribeVoice] = useState(true)
+
+  // 加载自动转文字配置
+  useEffect(() => {
+    const loadConfig = async () => {
+      const enabled = await configService.getAutoTranscribeVoice()
+      setAutoTranscribeVoice(enabled)
+    }
+    loadConfig()
+  }, [])
 
   // 从缓存获取表情包 data URL
   const cacheKey = message.emojiMd5 || message.emojiCdnUrl || ''
@@ -1722,6 +1733,7 @@ function MessageBubble({ message, session, showTime, myAvatarUrl, isGroupChat }:
     if (!autoTranscribeEnabled) return
     if (!isVoice) return
     if (!voiceDataUrl) return
+    if (!autoTranscribeVoice) return // 如果自动转文字已关闭，不自动转文字
     if (voiceTranscriptError) return
     if (voiceTranscriptLoading || voiceTranscript !== undefined || voiceTranscriptRequestedRef.current) return
     void requestVoiceTranscript()

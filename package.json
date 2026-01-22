@@ -105,6 +105,24 @@
     "asarUnpack": [
       "node_modules/silk-wasm/**/*",
       "node_modules/sherpa-onnx-node/**/*"
+    ],
+    "extraFiles": [
+      {
+        "from": "resources/msvcp140.dll",
+        "to": "."
+      },
+      {
+        "from": "resources/msvcp140_1.dll",
+        "to": "."
+      },
+      {
+        "from": "resources/vcruntime140.dll",
+        "to": "."
+      },
+      {
+        "from": "resources/vcruntime140_1.dll",
+        "to": "."
+      }
     ]
   }
 }

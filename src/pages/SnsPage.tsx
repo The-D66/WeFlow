@@ -264,7 +264,7 @@ export default function SnsPage() {
             setHasNewer(false)
             setSelectedUsernames([])
             setSearchKeyword('')
-            setJumpTargetDate(null)
+            setJumpTargetDate(undefined)
             loadContacts()
             loadPosts({ reset: true })
         }

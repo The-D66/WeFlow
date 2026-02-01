@@ -16,6 +16,10 @@ export interface GroupMember {
   username: string
   displayName: string
   avatarUrl?: string
+  nickname?: string
+  alias?: string
+  remark?: string
+  groupNickname?: string
 }
 
 export interface GroupMessageRank {
@@ -211,14 +215,55 @@ class GroupAnalyticsService {
       }
 
       const members = result.members as { username: string; avatarUrl?: string }[]
-      const usernames = members.map((m) => m.username)
-      const displayNames = await wcdbService.getDisplayNames(usernames)
+      const usernames = members.map((m) => m.username).filter(Boolean)
 
-      const data: GroupMember[] = members.map((m) => ({
-        username: m.username,
-        displayName: displayNames.success && displayNames.map ? (displayNames.map[m.username] || m.username) : m.username,
-        avatarUrl: m.avatarUrl
-      }))
+      const [displayNames, groupNicknames] = await Promise.all([
+        wcdbService.getDisplayNames(usernames),
+        this.getGroupNicknamesForRoom(chatroomId)
+      ])
+
+      const contactMap = new Map<string, { remark?: string; nickName?: string; alias?: string }>()
+      const concurrency = 6
+      await this.parallelLimit(usernames, concurrency, async (username) => {
+        const contactResult = await wcdbService.getContact(username)
+        if (contactResult.success && contactResult.contact) {
+          const contact = contactResult.contact as any
+          contactMap.set(username, {
+            remark: contact.remark || '',
+            nickName: contact.nickName || contact.nick_name || '',
+            alias: contact.alias || ''
+          })
+        } else {
+          contactMap.set(username, { remark: '', nickName: '', alias: '' })
+        }
+      })
+
+      const myWxid = this.cleanAccountDirName(this.configService.get('myWxid') || '')
+      const data: GroupMember[] = members.map((m) => {
+        const wxid = m.username || ''
+        const displayName = displayNames.success && displayNames.map ? (displayNames.map[wxid] || wxid) : wxid
+        const contact = contactMap.get(wxid)
+        const nickname = contact?.nickName || ''
+        const remark = contact?.remark || ''
+        const alias = contact?.alias || ''
+        const rawGroupNickname = groupNicknames.get(wxid.toLowerCase()) || ''
+        const normalizedWxid = this.cleanAccountDirName(wxid)
+        const groupNickname = this.normalizeGroupNickname(
+          rawGroupNickname,
+          normalizedWxid === myWxid ? myWxid : wxid,
+          ''
+        )
+
+        return {
+          username: wxid,
+          displayName,
+          nickname,
+          alias,
+          remark,
+          groupNickname,
+          avatarUrl: m.avatarUrl
+        }
+      })
 
       return { success: true, data }
     } catch (e) {

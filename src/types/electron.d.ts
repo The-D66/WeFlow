@@ -220,6 +220,10 @@ export interface ElectronAPI {
         username: string
         displayName: string
         avatarUrl?: string
+        nickname?: string
+        alias?: string
+        remark?: string
+        groupNickname?: string
       }>
       error?: string
     }>
